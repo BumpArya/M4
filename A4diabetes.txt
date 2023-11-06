@@ -1,0 +1,50 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+diabetes_data = pd.read_csv('diabetes.csv')
+print(diabetes_data.shape)
+diabetes_data.head()
+
+diabetes_data_copy = diabetes_data.copy(deep = True)
+diabetes_data_copy[['Glucose','BloodPressure','SkinThickness','Insulin','BMI']] = diabetes_data_copy[['Glucose','BloodPressure','SkinThickness','Insulin','BMI']].replace(0,np.NaN)
+
+diabetes_data_copy['Glucose'].fillna(diabetes_data_copy['Glucose'].mean(), inplace = True)
+diabetes_data_copy['BloodPressure'].fillna(diabetes_data_copy['BloodPressure'].mean(), inplace = True)
+diabetes_data_copy['SkinThickness'].fillna(diabetes_data_copy['SkinThickness'].median(), inplace = True)
+diabetes_data_copy['Insulin'].fillna(diabetes_data_copy['Insulin'].median(), inplace = True)
+diabetes_data_copy['BMI'].fillna(diabetes_data_copy['BMI'].median(), inplace = True)
+
+from sklearn.preprocessing import StandardScaler
+sc_X = StandardScaler()
+X =  pd.DataFrame(sc_X.fit_transform(diabetes_data_copy.drop(["Outcome"],axis = 1),), columns=['Pregnancies', 'Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI', 'DiabetesPedigreeFunction', 'Age'])
+y = diabetes_data_copy[['Outcome']]
+
+from sklearn.model_selection import train_test_split
+X_train,X_test,y_train,y_test = train_test_split(X,y,test_size=1/3,random_state=42)
+
+from sklearn.neighbors import KNeighborsClassifier
+test_scores = []
+train_scores = []
+for i in range(1,15):
+    knn = KNeighborsClassifier(i)
+    knn.fit(X_train,y_train)
+    train_scores.append(knn.score(X_train,y_train))
+    test_scores.append(knn.score(X_test,y_test))
+
+max_train_score = max(train_scores)
+train_scores_ind = train_scores.index(max_train_score) + 1
+print(f'Max train score = {max_train_score} for k = {train_scores_ind}')
+
+max_test_score = max(test_scores)
+test_scores_ind = test_scores.index(max_test_score) + 1
+print(f'Max test score = {max_test_score} for k = {test_scores_ind}')
+
+knn = KNeighborsClassifier(8)
+knn.fit(X_train,y_train)
+knn.score(X_test,y_test)
+
+from sklearn.metrics import confusion_matrix
+y_pred = knn.predict(X_test)
+confusion_matrix(y_test,y_pred)
